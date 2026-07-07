@@ -1,7 +1,9 @@
 import flet as ft
+from database import init_db, save_season
 
 def main(page: ft.Page):
     page.title = "zrda"
+    init_db()
 
     season_field = ft.TextField(label="Season length (days)", width=250)
     block_field = ft.TextField(label="Block length (days)", width=250)
@@ -29,10 +31,12 @@ def main(page: ft.Page):
             return
         
         error_text.value = ""
+        season_index = save_season(season_length, block_length)
+
         page.controls.clear()
         page.controls.append(
             ft.Text(
-                f"Season: {season_length} days, "
+                f"Season {season_index} started: {season_length} days, "
                 f"split into blocks of {block_length} days."
             )
         )
