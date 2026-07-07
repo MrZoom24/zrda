@@ -1,9 +1,68 @@
 import flet as ft
-from database import init_db, save_season, get_active_season
+from database import init_db, save_season, get_active_season, save_habit
 
 def main(page: ft.Page):
     page.title = "zrda"
     init_db()
+
+    def show_habit_screen(season_id, season_index):
+        habit_name_field = ft.TextField(label="Habit name", width=250)
+        habit_points_field = ft.TextField(label="Points for completing", width=250)
+        error_text = ft.Text(value="", color=ft.Colors.RED)
+        habits_list_display = ft.Column()
+        added_habits = []
+
+        def add_habit(e):
+            name = (habit_name_field.value or "").strip()
+            points_raw = (habit_points_field.value or "").strip()
+
+            if not name:
+                error_text.value = "Habit name can't be empty."
+                return
+            if not points_raw.isdigit() or int(points_raw) <= 0:
+                error_text.value = "Points must be a whole number greater than zero."
+                return
+            
+            points = int(points_raw)
+            save_habit(season_id, name, points)
+
+            added_habits.append(name)
+            habits_list_display.controls.append(ft.Text(f"✓ {name} ({points} pts)"))
+
+            habit_name_field.value = ""
+            habit_points_field.value = ""
+            error_text.value = ""
+
+        def finish_habits(e):
+            if not added_habits:
+                error_text.value = "Add at least one habit before continuing."
+                return
+            
+            # Placeholder confirmation. I will replace this with reflection screen
+            page.controls.clear()
+            page.controls.append(
+                ft.Text(f"Season {season_index}: {len(added_habits)} habit(s) saved.")
+            )
+
+        page.controls.clear()
+        page.controls.append(
+            ft.Column(
+                controls=[
+                    ft.Text("Add your habits for this season.", size=20),
+                    ft.Text(
+                        "(Binary yes/no habits only for now.)",
+                        italic=True,
+                        size=12,
+                    ),
+                    habit_name_field,
+                    habit_points_field,
+                    ft.ElevatedButton("Add habit", on_click=add_habit),
+                    error_text,
+                    habits_list_display,
+                    ft.ElevatedButton("Done adding habits", on_click=finish_habits),
+                ]
+            )
+        )
 
     def show_setup_screen():
         season_field = ft.TextField(label="Season length (days)", width=250)
@@ -32,15 +91,9 @@ def main(page: ft.Page):
                 return
         
             error_text.value = ""
-            season_index = save_season(season_length, block_length)
+            season_id, season_index = save_season(season_length, block_length)
 
-            page.controls.clear()
-            page.controls.append(
-                ft.Text(
-                    f"Season {season_index} started: {season_length} days, "
-                    f"split into blocks of {block_length} days."
-                )
-            )
+            show_habit_screen(season_id, season_index)
 
         page.controls.append(
             ft.Column(

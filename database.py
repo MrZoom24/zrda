@@ -21,6 +21,20 @@ def init_db():
         )
         """
     )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS habits (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            season_id INTEGER NOT NULL,
+            name TEXT NOT NULL,
+            habit_type TEXT NOT NULL,
+            point_value INTEGER NOT NULL,
+            FOREIGN KEY (season_id) REFERENCES seasons (id)
+        )
+        """
+    )
+
     conn.commit()
     conn.close()
 
@@ -42,8 +56,9 @@ def save_season(season_length, block_length):
         (next_index, season_length, block_length, str(date.today())),
     )
     conn.commit()
+    season_id = cursor.lastrowid
     conn.close()
-    return next_index
+    return season_id, next_index
 
 def get_active_season():
     conn = get_connection()
@@ -52,6 +67,27 @@ def get_active_season():
     row = cursor.fetchone()
     conn.close()
     return row
+
+def save_habit(season_id, name, point_value, habit_type="binary"):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        INSERT INTO habits (season_id, name, habit_type, point_value)
+        VALUES (?, ?, ?, ?)
+        """,
+        (season_id, name, habit_type, point_value),
+    )
+    conn.commit()
+    conn.close()
+
+def get_habits_for_season(season_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM habits WHERE season_id = ?", (season_id,))
+    rows = cursor.fetchall()
+    conn.close()
+    return rows
 
 if __name__ == "__main__":
     init_db()
